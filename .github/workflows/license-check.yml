@@ -1,0 +1,34 @@
+name: License and SBOM
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  license:
+    name: License inventory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check repository license file
+        run: |
+          if [ ! -f LICENSE ] && [ ! -f LICENSE.md ] && [ ! -f LICENSE.txt ]; then
+            echo "::warning::No LICENSE file found. Add one to make reuse terms clear."
+          fi
+      - name: Generate source inventory
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-sbom
+          path: sbom.spdx.json
+          retention-days: 30

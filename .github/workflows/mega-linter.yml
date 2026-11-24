@@ -1,0 +1,44 @@
+name: MegaLinter
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: mega-linter-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  megalinter:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: MegaLinter
+        uses: oxsecurity/megalinter@v8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: true
+          PRINT_ALL_FILES: false
+          ENABLE: YAML,JSON,MARKDOWN,REPOSITORY
+          DISABLE_LINTERS: SPELL_CSPELL
+          SHOW_ELAPSED_TIME: true
+          SARIF_REPORTER: true
+      - name: Upload MegaLinter reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: megalinter-reports
+          path: |
+            megalinter-reports/
+            mega-linter.log
+          if-no-files-found: ignore
+          retention-days: 14
