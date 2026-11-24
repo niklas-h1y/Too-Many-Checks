@@ -50,5 +50,5 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-      - name: Run textlint with preset
-        run: npx --yes textlint@14.8.3 --preset textlint-rule-preset-ja-technical-writing README.md
+      - name: Run common misspelling terminology rules
+        run: npx --yes textlint@14.8.3 --rule textlint-rule-common-misspellings README.md
