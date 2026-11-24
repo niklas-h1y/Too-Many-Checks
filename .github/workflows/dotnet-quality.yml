@@ -50,6 +50,7 @@ jobs:
         run: |
           target="$(find . -type f \( -name '*.sln' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
           echo "target=$target" >> "$GITHUB_OUTPUT"
+      - run: dotnet restore "${{ steps.project.outputs.target }}"
       - run: dotnet format "${{ steps.project.outputs.target }}" --verify-no-changes --no-restore
 
   vulnerable-packages:
