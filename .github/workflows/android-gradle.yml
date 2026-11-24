@@ -16,7 +16,7 @@ jobs:
     name: Android Gradle lint and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinned
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
       - name: Detect Android Gradle project
@@ -33,13 +33,13 @@ jobs:
           fi
       - name: Set up Java
         if: steps.gradle.outputs.found == 'true'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # pinned
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: "17"
       - name: Set up Android SDK
         if: steps.gradle.outputs.found == 'true'
-        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # pinned
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       - name: Run Android lint and unit tests
         if: steps.gradle.outputs.found == 'true'
         shell: bash
