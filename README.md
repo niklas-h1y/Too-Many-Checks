@@ -1,28 +1,49 @@
 # Too Many Checks
 
-A deliberately over-instrumented GitHub repository: a playground for seeing how many useful checks GitHub can run on every change.
+A deliberately over-instrumented GitHub repository: a playground for seeing how many useful, distinct checks GitHub can run on every change.
 
-The repository starts language-neutral and validates its own automation, documentation, dependencies, and security posture. It combines focused GitHub Actions workflows with broad linters and supply-chain scanners.
+The repository is language-neutral by default. Checks that need a particular artifact (Android APKs, shell scripts, Dockerfiles, Gradle projects) activate only when that input exists.
 
-## Checks included
+## Check catalogue
 
-| Area | Checks |
+| Area | Distinct checks |
 |---|---|
-| Workflow correctness | actionlint, zizmor, workflow YAML validation |
-| Repository hygiene | EditorConfig, Prettier, markdownlint, codespell |
-| Security | CodeQL, Gitleaks, Trivy, OpenSSF Scorecard |
-| Dependencies | Dependabot, dependency review on pull requests |
-| Broad linting | MegaLinter (YAML, Markdown, JSON, repository hygiene) |
-| CI matrix | Ubuntu, Windows, macOS; multiple Python and Node versions |
-| GitHub-native | Independent workflow jobs, concurrency cancellation, PR checks |
+| Workflow security | CodeQL for Actions, zizmor, actionlint |
+| Supply chain | OpenSSF Scorecard, OSV-Scanner, Dependabot, GitHub dependency review |
+| Repository security | Gitleaks, Trivy filesystem / IaC / license scan |
+| Android packages | APK ZIP integrity, Android manifest metadata, signing certificates, zip alignment, dangerous manifest flags, APKID packer detection, APKLeaks embedded-secret scan |
+| Documentation | markdownlint-cli2, codespell, Prettier, Lychee external-link validation |
+| General configuration | yamllint, JSON/TOML validation, pre-commit hygiene |
+| Shell | ShellCheck and shfmt (only when shell scripts exist) |
+| Containers | Hadolint (only when Dockerfiles exist) |
+| CI compatibility | 24-way OS / Python / Node runtime smoke-test matrix |
+| Pull requests | Semantic PR-title validation, dependency review, automatic labels |
+| Project hygiene | License inventory, SPDX SBOM, stale issue/PR management |
+| Releases | Source archive, SHA-256 checksums, build-provenance attestation |
+
+The workflows intentionally avoid running two tools for the same job. Some security tools have overlapping coverage by nature, but their distinct engines and data sources are documented in their job names.
+
+## Android APK checks
+
+Place APKs anywhere in the repository (preferably under artifacts/ or dist/). The APK workflow activates only when an APK is present. It checks:
+
+- ZIP archive integrity and APK package metadata.
+- Application ID, minimum SDK, target SDK, and declared permissions.
+- APK signing certificate and signature validity.
+- 4-byte ZIP alignment.
+- Debuggable and cleartext-traffic manifest flags.
+- APKID packer/compiler indicators.
+- APKLeaks for embedded API keys and other hard-coded secrets.
+
+Unsigned APKs fail signature verification by design. Do not commit production signing keys or passwords; use GitHub Actions secrets for signing workflows.
 
 ## Repository settings to enable
 
 Some protections are configured in GitHub Settings rather than repository files:
 
 1. Enable **Secret scanning**, **Push protection**, and **Dependabot alerts** (where available).
-2. Enable **Code security** and **Dependency graph**.
-3. Protect `main`; require pull requests and select the workflow jobs you want as required checks.
+2. Enable **Dependency graph** so GitHub Dependency Review can inspect pull requests.
+3. Protect main; require the checks you want as required status checks.
 4. Enable signed commits / vigilant mode if appropriate for contributors.
 5. Consider enabling merge queue, auto-merge, and stale-branch updates.
 
@@ -30,7 +51,7 @@ GitHub plan and repository visibility affect availability of some security featu
 
 ## Local validation
 
-Install [actionlint](https://github.com/rhysd/actionlint), [zizmor](https://github.com/zizmorcore/zizmor), and [pre-commit](https://pre-commit.com/), then run:
+Install actionlint, zizmor, and pre-commit, then run:
 
 ```sh
 actionlint
@@ -40,4 +61,4 @@ pre-commit run --all-files
 
 ## Design note
 
-More checks are not automatically better. This project favors independent, explainable checks and keeps scheduled or heavyweight scans separate from fast pull-request feedback. Third-party actions should be reviewed and pinned to immutable commit SHAs before use in a high-trust production environment.
+More checks are not automatically better. This project favors independent, explainable checks and keeps heavyweight or artifact-specific scans conditional. Third-party actions should be reviewed and pinned to immutable commit SHAs before use in a high-trust production environment.
