@@ -55,4 +55,5 @@ jobs:
         run: |
           while IFS= read -r -d '' pom; do
             mvn -B -f "$pom" -DskipTests -Dmaven.compiler.showWarnings=true -Dmaven.compiler.compilerArgs=-Xlint:all compile
+            mvn -B -f "$pom" -DskipTests com.github.spotbugs:spotbugs-maven-plugin:4.9.7.0:check
           done < <(find . -type f -name pom.xml -not -path '*/target/*' -print0)
