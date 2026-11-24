@@ -1,0 +1,88 @@
+name: Android APK audit
+
+on:
+  push:
+    paths: ["**/*.apk"]
+  pull_request:
+    paths: ["**/*.apk"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk-audit:
+    name: APK static validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find APK artifacts
+        id: find
+        shell: bash
+        run: |
+          find . -type f -iname '*.apk' -not -path './.git/*' -print > apk-files.txt
+          if [ -s apk-files.txt ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No APK files in this revision; Android-specific checks are skipped."
+          fi
+      - name: Set up Android SDK
+        if: steps.find.outputs.found == 'true'
+        uses: android-actions/setup-android@v4
+      - name: Install Android build tools
+        if: steps.find.outputs.found == 'true'
+        run: sdkmanager "build-tools;35.0.0"
+      - name: Install APK static-analysis tools
+        if: steps.find.outputs.found == 'true'
+        run: |
+          python -m pip install --disable-pip-version-check apkid apkleaks
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
+      - name: Inspect APK structure, manifest, signing and alignment
+        if: steps.find.outputs.found == 'true'
+        shell: bash
+        run: |
+          mkdir -p apk-audit-reports
+          while IFS= read -r apk; do
+            name="$(basename "$apk" .apk)"
+            report="apk-audit-reports/$name.txt"
+            {
+              echo "=== FILE: $apk ==="
+              sha256sum "$apk"
+              unzip -t "$apk"
+              echo "=== PACKAGE SUMMARY ==="
+              apkanalyzer apk summary "$apk"
+              echo "=== APPLICATION ID ==="
+              apkanalyzer manifest application-id "$apk"
+              echo "=== SDK LEVELS ==="
+              apkanalyzer manifest min-sdk "$apk"
+              apkanalyzer manifest target-sdk "$apk"
+              echo "=== DECLARED PERMISSIONS ==="
+              apkanalyzer manifest permissions "$apk"
+              echo "=== SIGNATURE CERTIFICATE ==="
+              apksigner verify --verbose --print-certs "$apk"
+              echo "=== ZIP ALIGNMENT ==="
+              zipalign -c -v 4 "$apk"
+              echo "=== MANIFEST SECURITY FLAGS ==="
+              apkanalyzer manifest print "$apk" > "apk-audit-reports/$name-manifest.xml"
+              if grep -Eq 'android:debuggable="true"' "apk-audit-reports/$name-manifest.xml"; then
+                echo "::error file=$apk::APK is marked debuggable"
+                exit 1
+              fi
+              if grep -Eq 'android:usesCleartextTraffic="true"' "apk-audit-reports/$name-manifest.xml"; then
+                echo "::warning file=$apk::APK explicitly allows cleartext network traffic"
+              fi
+            } | tee "$report"
+            echo "=== APKID PACKER / COMPILER SCAN ===" | tee -a "$report"
+            apkid "$apk" 2>&1 | tee -a "$report"
+            echo "=== APKLEAKS HARDCODED-SECRET SCAN ===" | tee -a "$report"
+            apkleaks -f "$apk" 2>&1 | tee -a "$report"
+          done < apk-files.txt
+      - name: Upload APK audit reports
+        if: always() && steps.find.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-audit
+          path: apk-audit-reports/
+          if-no-files-found: warn
+          retention-days: 30
