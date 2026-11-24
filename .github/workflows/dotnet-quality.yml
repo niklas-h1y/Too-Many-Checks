@@ -18,29 +18,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Locate solution or project
-        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
-        id: project
-        shell: bash
-        run: |
-          target="$(find . -type f \( -name '*.sln' -o -name '*.slnx' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
-          echo "target=$target" >> "$GITHUB_OUTPUT"
-      - name: Restore dependencies
-        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
-        env:
-          PROJECT_FILE: ${{ steps.project.outputs.target }}
-        run: dotnet restore "$PROJECT_FILE"
-      - name: Build with warnings as errors
-        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
-        env:
-          PROJECT_FILE: ${{ steps.project.outputs.target }}
-        run: dotnet build "$PROJECT_FILE" --no-restore --configuration Release -warnaserror
-      - name: Run tests when test projects exist
+      - name: Restore and build every solution or project
         if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' project; do
-            dotnet test "$project" --configuration Release --no-restore
+            dotnet restore "$project"
+            dotnet build "$project" --no-restore --configuration Release -warnaserror
+          done < <(find . -type f \( -name '*.sln' -o -name '*.slnx' -o -name '*.csproj' \) -not -path '*/obj/*' -print0)
+      - name: Run all test projects
+        if: hashFiles('**/*test*.csproj') != ''
+        shell: bash
+        run: |
+          while IFS= read -r -d '' project; do
+            dotnet test "$project" --configuration Release
           done < <(find . -type f -iname '*test*.csproj' -not -path '*/obj/*' -print0)
 
   format:
@@ -50,17 +41,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Locate solution or project
+      - name: Restore and verify formatting for every solution or project
         if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
-        id: project
         shell: bash
         run: |
-          target="$(find . -type f \( -name '*.sln' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
-          echo "target=$target" >> "$GITHUB_OUTPUT"
-      - run: dotnet restore "${{ steps.project.outputs.target }}"
-        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
-      - run: dotnet format "${{ steps.project.outputs.target }}" --verify-no-changes --no-restore
-        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
+          while IFS= read -r -d '' project; do
+            dotnet restore "$project"
+            dotnet format "$project" --verify-no-changes --no-restore
+          done < <(find . -type f \( -name '*.sln' -o -name '*.csproj' \) -not -path '*/obj/*' -print0)
 
   vulnerable-packages:
     name: NuGet vulnerable dependency audit
@@ -70,8 +58,10 @@ jobs:
         with:
           persist-credentials: false
       - name: Audit NuGet dependencies
-        if: hashFiles('**/*.csproj') != '' || hashFiles('**/packages.lock.json') != ''
+        if: hashFiles('**/*.csproj') != ''
+        shell: bash
         run: |
           while IFS= read -r -d '' project; do
+            dotnet restore "$project"
             dotnet list "$project" package --vulnerable --include-transitive
           done < <(find . -type f -name '*.csproj' -not -path '*/obj/*' -print0)
