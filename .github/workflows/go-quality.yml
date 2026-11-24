@@ -13,35 +13,51 @@ permissions:
 jobs:
   unit-and-race-tests:
     name: Go tests and race detector
-    if: hashFiles('**/*.go') != ''
+    if: hashFiles('**/go.mod') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Run unit tests
-        run: go test ./...
-      - name: Run race-enabled tests
-        run: go test -race ./...
+      - name: Run unit tests in each Go module
+        shell: bash
+        run: |
+          while IFS= read -r -d '' module; do
+            (cd "$(dirname "$module")" && go test ./...)
+          done < <(find . -type f -name go.mod -not -path '*/vendor/*' -print0)
+      - name: Run race-enabled tests in each Go module
+        shell: bash
+        run: |
+          while IFS= read -r -d '' module; do
+            (cd "$(dirname "$module")" && go test -race ./...)
+          done < <(find . -type f -name go.mod -not -path '*/vendor/*' -print0)
 
   compiler-vet:
     name: Go vet static analysis
-    if: hashFiles('**/*.go') != ''
+    if: hashFiles('**/go.mod') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Run go vet
-        run: go vet ./...
+      - name: Run go vet in every Go module
+        shell: bash
+        run: |
+          while IFS= read -r -d '' module; do
+            (cd "$(dirname "$module")" && go vet ./...)
+          done < <(find . -type f -name go.mod -not -path '*/vendor/*' -print0)
 
   vulnerability-analysis:
     name: govulncheck call-graph analysis
-    if: hashFiles('**/*.go') != ''
+    if: hashFiles('**/go.mod') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Analyze reachable Go vulnerabilities
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+        shell: bash
+        run: |
+          while IFS= read -r -d '' module; do
+            (cd "$(dirname "$module")" && go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...)
+          done < <(find . -type f -name go.mod -not -path '*/vendor/*' -print0)
