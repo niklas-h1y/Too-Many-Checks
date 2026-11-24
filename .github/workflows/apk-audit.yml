@@ -73,19 +73,44 @@ jobs:
               apkanalyzer manifest target-sdk "$apk"
               echo "=== DECLARED PERMISSIONS ==="
               apkanalyzer manifest permissions "$apk"
-              echo "=== SIGNATURE CERTIFICATE ==="
+              echo "=== DEX FILE INVENTORY ==="
+              apkanalyzer dex list "$apk"
+              echo "=== APK FILE INVENTORY ==="
+              apkanalyzer files list "$apk"
+              echo "=== SIGNATURE SCHEMES AND CERTIFICATE ==="
               apksigner verify --verbose --print-certs "$apk"
               echo "=== ZIP ALIGNMENT ==="
               zipalign -c -v 4 "$apk"
-              echo "=== MANIFEST SECURITY FLAGS ==="
+              echo "=== MANIFEST SECURITY REVIEW ==="
               apkanalyzer manifest print "$apk" > "apk-audit-reports/$name-manifest.xml"
-              if grep -Eq 'android:debuggable="true"' "apk-audit-reports/$name-manifest.xml"; then
-                echo "::error file=$apk::APK is marked debuggable"
-                exit 1
-              fi
-              if grep -Eq 'android:usesCleartextTraffic="true"' "apk-audit-reports/$name-manifest.xml"; then
-                echo "::warning file=$apk::APK explicitly allows cleartext network traffic"
-              fi
+              python - "apk-audit-reports/$name-manifest.xml" "$apk" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          manifest_path, apk_path = sys.argv[1:]
+          root = ET.parse(manifest_path).getroot()
+          android = "{http://schemas.android.com/apk/res/android}"
+          app = root.find("application")
+          if app is None:
+              raise SystemExit(f"{apk_path}: manifest has no application element")
+          if app.get(android + "debuggable") == "true":
+              raise SystemExit(f"::error file={apk_path}::APK is marked debuggable")
+          if app.get(android + "usesCleartextTraffic") == "true":
+              print(f"::warning file={apk_path}::Cleartext network traffic is explicitly enabled")
+          if app.get(android + "allowBackup") == "true":
+              print(f"::warning file={apk_path}::Application data backup is enabled; review backup rules")
+          if app.get(android + "testOnly") == "true":
+              print(f"::warning file={apk_path}::APK is marked testOnly")
+          exported_without_permission = []
+          for tag in ("activity", "activity-alias", "service", "receiver", "provider"):
+              for component in app.findall(tag):
+                  if component.get(android + "exported") == "true" and not component.get(android + "permission"):
+                      exported_without_permission.append((tag, component.get(android + "name", "<unnamed>")))
+          for kind, component_name in exported_without_permission:
+              print(f"::warning file={apk_path}::Exported {kind} has no component-level permission: {component_name}")
+          if exported_without_permission:
+              print(f"Review {len(exported_without_permission)} exported component(s) for unintended external access.")
+          PY
             } | tee "$report"
             echo "=== APKID PACKER / COMPILER SCAN ===" | tee -a "$report"
             apkid "$apk" 2>&1 | tee -a "$report"
@@ -106,6 +131,47 @@ jobs:
           print("APKLeaks found no hard-coded secret patterns.")
           PY
           done < apk-files.txt
+      - name: Decompile DEX and flag risky Android API patterns
+        if: steps.find.outputs.found == 'true'
+        shell: bash
+        run: |
+          mkdir -p apk-audit-reports/decompiled
+          while IFS= read -r apk; do
+            name="$(basename "$apk" .apk)"
+            jadx --no-res --no-imports --threads-count 2 -d "apk-audit-reports/decompiled/$name" "$apk" || {
+              echo "::warning file=$apk::JADX could not fully decompile this APK; inspect the APKID/APKLeaks reports."
+              continue
+            }
+          done < apk-files.txt
+          python - <<'PY'
+          import pathlib
+          import re
+
+          rules = {
+              "WebView JavaScript bridge": r"addJavascriptInterface\\s*\\(",
+              "WebView JavaScript enabled": r"setJavaScriptEnabled\\s*\\(\\s*true",
+              "TLS certificate validation bypass": r"onReceivedSslError|proceed\\s*\\(\\s*\\)",
+              "Trust-all certificate manager": r"X509TrustManager|ALLOW_ALL_HOSTNAME_VERIFIER",
+              "Insecure ECB cipher mode": r"Cipher\\.getInstance\\s*\\(\\s*[\\"']AES/ECB",
+              "World-readable file mode": r"MODE_WORLD_READABLE|MODE_WORLD_WRITEABLE",
+              "Plain HTTP URL": r"https?://(?!localhost|127\\.0\\.0\\.1)[^\\s\\"']+",
+          }
+          root = pathlib.Path("apk-audit-reports/decompiled")
+          counts = {name: 0 for name in rules}
+          for source in root.rglob("*.java"):
+              text = source.read_text(encoding="utf-8", errors="replace")
+              for label, pattern in rules.items():
+                  hits = list(re.finditer(pattern, text, re.IGNORECASE))
+                  counts[label] += len(hits)
+                  for hit in hits[:10]:
+                      line = text.count("\\n", 0, hit.start()) + 1
+                      print(f"::warning file={source},line={line}::{label} pattern detected (review context)")
+          pathlib.Path("apk-audit-reports/api-pattern-summary.txt").write_text(
+              "\\n".join(f"{label}: {count}" for label, count in counts.items()) + "\\n",
+              encoding="utf-8",
+          )
+          print("API pattern scan is heuristic; warnings require manual review.")
+          PY
       - name: Upload APK audit reports
         if: always() && steps.find.outputs.found == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
