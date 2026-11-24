@@ -1,0 +1,33 @@
+name: Shell quality
+
+on:
+  push:
+    branches: [main]
+    paths: ["**/*.sh", "**/*.bash"]
+  pull_request:
+    paths: ["**/*.sh", "**/*.bash"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell:
+    name: ShellCheck and shfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shell analyzers
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck shfmt
+      - name: Lint shell scripts when present
+        shell: bash
+        run: |
+          mapfile -d '' scripts < <(find . -type f \( -name '*.sh' -o -name '*.bash' \) -not -path './.git/*' -print0)
+          if [ "${#scripts[@]}" -eq 0 ]; then
+            echo "No shell scripts found; nothing to lint."
+            exit 0
+          fi
+          shellcheck --severity=style "${scripts[@]}"
+          shfmt -d "${scripts[@]}"
