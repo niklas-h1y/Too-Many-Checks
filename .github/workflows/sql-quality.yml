@@ -1,0 +1,91 @@
+name: SQL lint and parser validation
+
+on:
+  push:
+    paths: ["**/*.sql","**/.sqlfluff","**/pyproject.toml"]
+  pull_request:
+    paths: ["**/*.sql","**/.sqlfluff","**/pyproject.toml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sqlfluff:
+    name: SQLFluff style and dialect lint
+    if: hashFiles('**/*.sql') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --disable-pip-version-check sqlfluff==3.4.2
+      - name: Lint SQL files
+        run: sqlfluff lint . --dialect ansi
+
+  sqlglot:
+    name: SQLGlot independent SQL parser
+    if: hashFiles('**/*.sql') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --disable-pip-version-check sqlglot==27.29.0
+      - name: Parse every SQL file
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          from sqlglot import parse
+          files = [p for p in Path(".").rglob("*.sql") if ".git" not in p.parts and "node_modules" not in p.parts]
+          errors = []
+          for path in files:
+              try:
+                  parse(path.read_text(encoding="utf-8"), read="ansi")
+                  print(f"PASS {path}")
+              except Exception as exc:
+                  errors.append((path, exc))
+          for path, exc in errors:
+              print(f"FAIL {path}: {exc}", file=sys.stderr)
+          if errors:
+              raise SystemExit(1)
+          print(f"Parsed {len(files)} SQL file(s).")
+          PY
+
+  migration-safety:
+    name: SQL migration anti-pattern scan
+    if: hashFiles('**/*.sql') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Flag risky migration patterns
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          rules = {
+              "unbounded DELETE": r"\bDELETE\s+FROM\s+[^;]+;",
+              "unbounded UPDATE": r"\bUPDATE\s+[^;]+\s+SET\s+[^;]+;",
+              "DROP TABLE": r"\bDROP\s+TABLE\b",
+              "TRUNCATE": r"\bTRUNCATE\b",
+          }
+          for path in Path(".").rglob("*.sql"):
+              if ".git" in path.parts or "node_modules" in path.parts:
+                  continue
+              source = path.read_text(encoding="utf-8", errors="replace")
+              for label, pattern in rules.items():
+                  for match in re.finditer(pattern, source, re.I | re.S):
+                      snippet = " ".join(match.group(0).split())[:120]
+                      print(f"::warning file={path}::{label} requires human review: {snippet}")
+          print("Heuristic migration scan completed; warnings are not proof of a defect.")
+          PY
