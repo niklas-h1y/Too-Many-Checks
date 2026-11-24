@@ -13,23 +13,26 @@ permissions:
 jobs:
   build-test:
     name: .NET restore, build and tests
-    if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Locate solution or project
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
         id: project
         shell: bash
         run: |
           target="$(find . -type f \( -name '*.sln' -o -name '*.slnx' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
           echo "target=$target" >> "$GITHUB_OUTPUT"
       - name: Restore dependencies
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
         run: dotnet restore "${{ steps.project.outputs.target }}"
       - name: Build with warnings as errors
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
         run: dotnet build "${{ steps.project.outputs.target }}" --no-restore --configuration Release -warnaserror
       - name: Run tests when test projects exist
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' project; do
@@ -38,30 +41,32 @@ jobs:
 
   format:
     name: dotnet format whitespace and analyzers
-    if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Locate solution or project
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
         id: project
         shell: bash
         run: |
           target="$(find . -type f \( -name '*.sln' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
           echo "target=$target" >> "$GITHUB_OUTPUT"
       - run: dotnet restore "${{ steps.project.outputs.target }}"
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
       - run: dotnet format "${{ steps.project.outputs.target }}" --verify-no-changes --no-restore
+        if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
 
   vulnerable-packages:
     name: NuGet vulnerable dependency audit
-    if: hashFiles('**/*.csproj') != '' || hashFiles('**/packages.lock.json') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Audit NuGet dependencies
+        if: hashFiles('**/*.csproj') != '' || hashFiles('**/packages.lock.json') != ''
         run: |
           while IFS= read -r -d '' project; do
             dotnet list "$project" package --vulnerable --include-transitive
