@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "feat/**", "fix/**"]
   pull_request:
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,13 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check for whitespace errors
-        run: git diff --check
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            git diff --check "origin/$GITHUB_BASE_REF...HEAD"
+          else
+            git diff --check HEAD^ HEAD
+          fi
       - name: Check required repository files
         shell: bash
         run: |
@@ -31,7 +38,7 @@ jobs:
           find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | grep -q .
 
   platform-matrix:
-    name: Platform / Python ${{ matrix.python }} / Node ${{ matrix.node }}
+    name: ${{ matrix.os }} / Python ${{ matrix.python }} / Node ${{ matrix.node }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
