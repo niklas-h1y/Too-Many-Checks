@@ -152,7 +152,7 @@ jobs:
               "WebView JavaScript enabled": r"setJavaScriptEnabled\s*\(\s*true",
               "TLS certificate validation bypass": r"onReceivedSslError|proceed\s*\(",
               "Trust-all certificate manager": r"X509TrustManager|ALLOW_ALL_HOSTNAME_VERIFIER",
-              "Insecure ECB cipher mode": r"Cipher\.getInstance\s*\(\s*['\"]AES/ECB",
+              "Insecure ECB cipher mode": r"Cipher\.getInstance\s*\(\s*['"]AES/ECB",
               "World-readable file mode": r"MODE_WORLD_READABLE|MODE_WORLD_WRITEABLE",
               "Plain HTTP URL": r"http://[^\s]+",
           }
