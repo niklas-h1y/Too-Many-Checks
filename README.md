@@ -2,7 +2,7 @@
 
 A deliberately over-instrumented GitHub repository: a playground for seeing how many useful, distinct checks GitHub can run on every change.
 
-The repository is language-neutral by default. Checks that need a particular artifact (Android APKs, shell scripts, Dockerfiles, Gradle projects) activate only when that input exists.
+The repository is language-neutral by default. Checks that need a particular artifact (Android APKs, Android App Bundles, shell scripts, Dockerfiles, Gradle projects) activate only when that input exists.
 
 ## Check catalogue
 
@@ -11,7 +11,8 @@ The repository is language-neutral by default. Checks that need a particular art
 | Workflow security | CodeQL for Actions, zizmor, actionlint |
 | Supply chain | OpenSSF Scorecard, OSV-Scanner, Dependabot, GitHub dependency review |
 | Repository security | Gitleaks, Trivy filesystem / IaC / license scan |
-| Android packages | APK ZIP integrity, Android manifest metadata, signing certificates, zip alignment, dangerous manifest flags, APKID packer detection, APKLeaks embedded-secret scan |
+| Android APKs | ZIP integrity, manifest metadata, signing certificates, zip alignment, debug / cleartext flags, APKID packer detection, APKLeaks embedded-secret scan |
+| Android App Bundles | Bundletool structural validation, module manifest inspection, JAR signature verification |
 | Documentation | markdownlint-cli2, codespell, Prettier, Lychee external-link validation |
 | General configuration | yamllint, JSON/TOML validation, pre-commit hygiene |
 | Shell | ShellCheck and shfmt (only when shell scripts exist) |
@@ -23,9 +24,11 @@ The repository is language-neutral by default. Checks that need a particular art
 
 The workflows intentionally avoid running two tools for the same job. Some security tools have overlapping coverage by nature, but their distinct engines and data sources are documented in their job names.
 
-## Android APK checks
+## Android artifact checks
 
-Place APKs anywhere in the repository (preferably under artifacts/ or dist/). The APK workflow activates only when an APK is present. It checks:
+Place APKs and AABs anywhere in the repository (preferably under artifacts/ or dist/). The corresponding workflow activates only when that artifact type is present.
+
+APK validation checks:
 
 - ZIP archive integrity and APK package metadata.
 - Application ID, minimum SDK, target SDK, and declared permissions.
@@ -35,7 +38,13 @@ Place APKs anywhere in the repository (preferably under artifacts/ or dist/). Th
 - APKID packer/compiler indicators.
 - APKLeaks for embedded API keys and other hard-coded secrets.
 
-Unsigned APKs fail signature verification by design. Do not commit production signing keys or passwords; use GitHub Actions secrets for signing workflows.
+AAB validation checks:
+
+- Bundletool's App Bundle structure and module validation.
+- Base module manifest extraction.
+- JAR signing and signature verification.
+
+Unsigned APKs and AABs fail signature verification by design. Do not commit production signing keys or passwords; use GitHub Actions secrets for signing workflows.
 
 ## Repository settings to enable
 
