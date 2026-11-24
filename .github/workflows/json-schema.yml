@@ -13,13 +13,13 @@ permissions:
 jobs:
   json-parse:
     name: Strict JSON syntax validation
-    if: hashFiles('**/*.json') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Parse all JSON files
+        if: hashFiles('**/*.json') != ''
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -33,17 +33,19 @@ jobs:
 
   schema-meta-validation:
     name: JSON Schema meta-schema validation
-    if: hashFiles('**/*.schema.json') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: hashFiles('**/*.schema.json') != ''
         with:
           python-version: "3.13"
       - run: python -m pip install --disable-pip-version-check jsonschema==4.25.1
+        if: hashFiles('**/*.schema.json') != ''
       - name: Validate each schema against its meta-schema
+        if: hashFiles('**/*.schema.json') != ''
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -59,13 +61,13 @@ jobs:
 
   duplicate-json-keys:
     name: Duplicate JSON object key detection
-    if: hashFiles('**/*.json') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Reject duplicate object keys
+        if: hashFiles('**/*.json') != ''
         run: |
           python - <<'PY'
           from pathlib import Path
