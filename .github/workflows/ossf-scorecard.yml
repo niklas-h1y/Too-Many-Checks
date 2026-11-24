@@ -25,9 +25,11 @@ jobs:
           persist-credentials: false
       - name: Install Scorecard CLI
         run: |
-          go install github.com/ossf/scorecard/v5@latest
+          go install github.com/ossf/scorecard/v5@v5.7.0
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Run Scorecard
+        env:
+          GITHUB_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: scorecard --repo=github.com/${{ github.repository }} --format=sarif --output=scorecard.sarif
       - name: Upload Scorecard results
         uses: github/codeql-action/upload-sarif@v3
