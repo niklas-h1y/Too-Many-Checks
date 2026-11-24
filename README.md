@@ -7,7 +7,7 @@ The repository is language-neutral by default. Checks that need a particular art
 ## Check catalogue
 
 | Area | Distinct checks |
-|---|---|
+| --- | --- |
 | Workflow security | CodeQL for Actions, zizmor, actionlint, SECURITY.md disclosure policy |
 | Supply chain | OpenSSF Scorecard, OSV-Scanner, Dependabot, GitHub dependency review |
 | Repository security | Gitleaks, Trivy filesystem / IaC / license scan |
