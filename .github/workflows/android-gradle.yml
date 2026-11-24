@@ -1,0 +1,48 @@
+name: Android Gradle validation
+
+on:
+  push:
+    branches: [main]
+    paths: ["**/gradlew", "**/*.gradle", "**/*.gradle.kts", "**/gradle.properties"]
+  pull_request:
+    paths: ["**/gradlew", "**/*.gradle", "**/*.gradle.kts", "**/gradle.properties"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-build:
+    name: Android Gradle lint and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate Gradle wrapper
+        id: gradle
+        shell: bash
+        run: |
+          find . -type f -name gradlew -not -path './.git/*' -print > gradle-wrappers.txt
+          if [ -s gradle-wrappers.txt ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No Gradle wrapper found; Android build checks are skipped."
+          fi
+      - name: Set up Java
+        if: steps.gradle.outputs.found == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Android SDK
+        if: steps.gradle.outputs.found == 'true'
+        uses: android-actions/setup-android@v4
+      - name: Run Android lint and unit tests
+        if: steps.gradle.outputs.found == 'true'
+        shell: bash
+        run: |
+          while IFS= read -r wrapper; do
+            project_dir="$(dirname "$wrapper")"
+            chmod +x "$wrapper"
+            (cd "$project_dir" && ./gradlew --no-daemon lint test)
+          done < gradle-wrappers.txt
