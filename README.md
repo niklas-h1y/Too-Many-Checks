@@ -13,8 +13,8 @@ The repository is language-neutral by default. Checks that need a particular art
 | Repository security | Gitleaks, Trivy filesystem / IaC / license scan |
 | Android APKs | ZIP integrity, manifest metadata, signing certificates, zip alignment, debug / cleartext flags, APKID packer detection, APKLeaks embedded-secret scan |
 | Android App Bundles | Bundletool structural validation, module manifest inspection, JAR signature verification |
-| Documentation | markdownlint-cli2, codespell, Prettier, Lychee external-link validation |
-| General configuration | yamllint, JSON/TOML validation, pre-commit hygiene |
+| Documentation | markdownlint-cli2, codespell, Lychee external-link validation |
+| General configuration | yamllint, JSON/TOML validation, Prettier JSONC formatting, pre-commit hygiene |
 | Shell | ShellCheck and shfmt (only when shell scripts exist) |
 | Containers | Hadolint (only when Dockerfiles exist) |
 | CI compatibility | 24-way OS / Python / Node runtime smoke-test matrix |
