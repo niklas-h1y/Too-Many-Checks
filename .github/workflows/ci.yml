@@ -28,7 +28,7 @@ jobs:
         run: |
           test -s README.md
           test -d .github/workflows
-          find .github/workflows -maxdepth 1 -type f -name '*.yml' -o -name '*.yaml' | grep -q .
+          find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) | grep -q .
 
   platform-matrix:
     name: Platform / Python ${{ matrix.python }} / Node ${{ matrix.node }}
@@ -71,7 +71,7 @@ jobs:
               document-start: disable
 
   markdown:
-    name: Markdown lint
+    name: Markdown lint and spelling
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,9 +88,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actionsx/prettier@v3
+      - uses: actions/setup-node@v4
         with:
-          args: --check README.md
+          node-version: "22"
+      - name: Check Markdown formatting
+        run: npx --yes prettier@3 --check README.md
 
   actionlint:
     name: GitHub Actions lint
