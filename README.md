@@ -19,6 +19,18 @@ The repository is language-neutral by default. Checks that need a particular art
 | JavaScript / TypeScript | npm audit, declared lint/test scripts, TypeScript compiler validation (only with a root package manifest) |
 | Infrastructure as code | Terraform fmt/validate and Checkov policy checks (only when IaC files exist) |
 | Archives and binaries | ZIP/JAR/WAR/EAR/AAR/TAR/GZIP integrity, path traversal, duplicate-entry and decompression-bomb checks |
+| Go | Unit tests, race detector, `go vet`, govulncheck call-graph vulnerability analysis (per Go module) |
+| Rust | rustfmt, Clippy, workspace tests, cargo-audit advisory scan (per Cargo project) |
+| SQL | SQLFluff dialect/style lint, SQLGlot parser validation, migration-risk heuristic review |
+| API contracts | Spectral ruleset lint, Redocly semantic validation, Swagger parser validation |
+| JSON | Strict parsing, JSON Schema meta-schema validation, duplicate object-key detection |
+| Git repository | `git fsck` object integrity, historical whitespace checks, conflict markers, case-collision / oversized-file / symlink audits |
+| .NET | Restore/build with warnings as errors, test projects, dotnet format, vulnerable NuGet package inventory |
+| JVM | Maven verify, Gradle check/build, Java compiler warnings, SpotBugs bytecode analysis |
+| Ruby / PHP | RuboCop, Bundler-audit, Composer validation and advisory audit, PHP syntax checks |
+| Protocol Buffers | Buf lint/build, protoc descriptor compilation, duplicate field-number policy scan |
+| Accessibility / markup | HTML Validate, Markuplint, ESLint jsx-a11y component rules |
+| Documentation prose | Alex inclusive-language checks, write-good style analysis, textlint common-misspelling rules |
 | Shell | ShellCheck and shfmt (only when shell scripts exist) |
 | Containers | Hadolint (only when Dockerfiles exist) |
 | CI compatibility | 24-way OS / Python / Node runtime smoke-test matrix |
@@ -26,7 +38,7 @@ The repository is language-neutral by default. Checks that need a particular art
 | Project hygiene | License inventory, SPDX SBOM, stale issue/PR management |
 | Releases | Source archive, SHA-256 checksums, build-provenance attestation |
 
-The suite permits substantial overlap: two checks may inspect the same artifact or risk category and still count separately when they use different engines, rulesets, heuristics, validation stages, or data sources. The goal is distinct signal rather than artificially minimizing repeated coverage.
+The suite now includes 32 workflow files and 39 additional job definitions in the latest expansion (some are conditional on relevant source files). The suite permits substantial overlap: two checks may inspect the same artifact or risk category and still count separately when they use different engines, rulesets, heuristics, validation stages, or data sources. The goal is distinct signal rather than artificially minimizing repeated coverage.
 
 ## Android artifact checks
 
