@@ -1,0 +1,102 @@
+name: Git history and repository hygiene
+
+on:
+  push:
+    paths: ["**","!.github/workflows/**"]
+  pull_request:
+    paths: ["**","!.github/workflows/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  object-database:
+    name: Git object database integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: git fsck --full --strict --no-reflogs
+
+  whitespace-history:
+    name: Historical whitespace and conflict-marker scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check committed changes for whitespace errors
+        run: git log --all --check --format=oneline
+      - name: Scan tracked files for unresolved merge markers
+        shell: bash
+        run: |
+          if git grep -n -I -E '^(<<<<<<< |=======|>>>>>>> )' -- . ':!*.lock'; then
+            echo "::error::Possible unresolved merge-conflict markers found."
+            exit 1
+          fi
+
+  path-and-size-audit:
+    name: File path collisions and oversized files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Detect case-folding collisions and files over 50 MiB
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          files = [p for p in Path(".").rglob("*") if p.is_file() and ".git" not in p.parts and "node_modules" not in p.parts and ".venv" not in p.parts]
+          folded = {}
+          errors = []
+          for path in files:
+              key = path.as_posix().casefold()
+              if key in folded and folded[key] != path.as_posix():
+                  errors.append(f"Case-insensitive path collision: {folded[key]} vs {path}")
+              folded[key] = path.as_posix()
+              if path.stat().st_size > 50 * 1024 * 1024:
+                  errors.append(f"File exceeds 50 MiB: {path} ({path.stat().st_size} bytes)")
+          for error in errors:
+              print(f"::error::{error}")
+          print(f"Inspected {len(files)} files.")
+          if errors:
+              sys.exit(1)
+          PY
+
+  symlink-audit:
+    name: Symlink escape detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Reject symlinks that resolve outside repository
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          root = Path(".").resolve()
+          bad = []
+          for path in root.rglob("*"):
+              if ".git" in path.parts:
+                  continue
+              if path.is_symlink():
+                  try:
+                      path.resolve(strict=False).relative_to(root)
+                  except ValueError:
+                      bad.append(path)
+          for path in bad:
+              print(f"::error::Symlink escapes repository: {path}")
+          if bad:
+              sys.exit(1)
+          print("Symlink targets remain inside the repository.")
+          PY
