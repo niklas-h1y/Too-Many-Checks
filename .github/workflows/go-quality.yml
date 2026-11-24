@@ -1,0 +1,47 @@
+name: Go quality and vulnerability checks
+
+on:
+  push:
+    paths: ["**/*.go","**/go.mod","**/go.sum"]
+  pull_request:
+    paths: ["**/*.go","**/go.mod","**/go.sum"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-and-race-tests:
+    name: Go tests and race detector
+    if: hashFiles('**/*.go') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run unit tests
+        run: go test ./...
+      - name: Run race-enabled tests
+        run: go test -race ./...
+
+  compiler-vet:
+    name: Go vet static analysis
+    if: hashFiles('**/*.go') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run go vet
+        run: go vet ./...
+
+  vulnerability-analysis:
+    name: govulncheck call-graph analysis
+    if: hashFiles('**/*.go') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Analyze reachable Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
