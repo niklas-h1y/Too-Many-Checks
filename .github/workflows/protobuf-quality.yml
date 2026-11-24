@@ -21,10 +21,9 @@ jobs:
           persist-credentials: false
       - name: Install Buf CLI
         run: |
-          curl -fsSL https://github.com/bufbuild/buf/releases/download/v1.59.0/buf-Linux-x86_64 -o "$RUNNER_TEMP/buf"
-          chmod +x "$RUNNER_TEMP/buf"
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-          mv "$RUNNER_TEMP/buf" "$RUNNER_TEMP/buf-bin"
+          mkdir -p "$RUNNER_TEMP/buf-bin"
+          curl -fsSL https://github.com/bufbuild/buf/releases/download/v1.59.0/buf-Linux-x86_64 -o "$RUNNER_TEMP/buf-bin/buf"
+          chmod +x "$RUNNER_TEMP/buf-bin/buf"
           echo "$RUNNER_TEMP/buf-bin" >> "$GITHUB_PATH"
       - name: Lint Protocol Buffer definitions
         run: buf lint
