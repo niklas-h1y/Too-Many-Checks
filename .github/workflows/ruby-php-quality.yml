@@ -13,41 +13,45 @@ permissions:
 jobs:
   ruby-style:
     name: RuboCop Ruby style and static analysis
-    if: hashFiles('**/*.rb') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.263.0
+        if: hashFiles('**/*.rb') != ''
         with:
           ruby-version: "3.3"
       - run: gem install rubocop --no-document --version 1.81.1
+        if: hashFiles('**/*.rb') != ''
       - run: rubocop --format progress
+        if: hashFiles('**/*.rb') != ''
 
   ruby-dependencies:
     name: Bundler dependency and lockfile audit
-    if: hashFiles('**/Gemfile') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.263.0
+        if: hashFiles('**/Gemfile') != ''
         with:
           ruby-version: "3.3"
       - run: gem install bundler-audit --no-document --version 0.9.2
+        if: hashFiles('**/Gemfile') != ''
       - run: bundle-audit check --update
+        if: hashFiles('**/Gemfile') != ''
 
   php-composer:
     name: Composer validation and dependency audit
-    if: hashFiles('**/composer.json') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Validate composer manifests
+        if: hashFiles('**/composer.json') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' manifest; do
@@ -57,12 +61,12 @@ jobs:
 
   php-static:
     name: PHP syntax and PHPStan analysis
-    if: hashFiles('**/*.php') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Lint PHP syntax
+        if: hashFiles('**/*.php') != ''
         run: |
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find . -type f -name '*.php' -not -path '*/vendor/*' -print0)
