@@ -19,10 +19,7 @@ jobs:
     name: Repository integrity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Check for whitespace errors
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedspace errors
         shell: bash
         run: |
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -49,13 +46,10 @@ jobs:
         python: ["3.10", "3.11", "3.12", "3.13"]
         node: ["20", "22"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # pinnedsion: ${{ matrix.node }}
       - name: Runtime smoke test
         run: |
           python --version
@@ -67,8 +61,7 @@ jobs:
     name: YAML validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: ibiqlik/action-yamllint@v3
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: ibiqlik/action-yamllint@v3
         with:
           file_or_dir: .
           config_data: |
@@ -83,21 +76,17 @@ jobs:
     name: Markdown lint and spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v19
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: DavidAnson/markdownlint-cli2-action@v19
         with:
           globs: '**/*.md'
       - name: Spell check
-        uses: codespell-project/actions-codespell@v2
-        with:
-          check_filenames: true
+        uses: codespell-project/actions-codespell@8f01853be192eb0f849a5c7d721450e7a467c579 # pinneds: true
 
   prettier:
     name: Prettier format check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: actions/setup-node@v4
         with:
           node-version: "22"
       - name: Check JSONC configuration formatting
@@ -107,10 +96,9 @@ jobs:
     name: GitHub Actions lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install actionlint
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedstall actionlint
         run: |
-          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) v1.7.12 "$RUNNER_TEMP"
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) 1.7.12 "$RUNNER_TEMP"
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - name: Lint workflow files
         run: actionlint -color
@@ -119,10 +107,7 @@ jobs:
     name: Pre-commit hooks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # pinneds: --all-files
