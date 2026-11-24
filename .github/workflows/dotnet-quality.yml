@@ -1,0 +1,67 @@
+name: .NET build, test and package security
+
+on:
+  push:
+    paths: ["**/*.cs","**/*.csproj","**/*.sln","**/*.slnx","**/Directory.Packages.props","**/packages.lock.json"]
+  pull_request:
+    paths: ["**/*.cs","**/*.csproj","**/*.sln","**/*.slnx","**/Directory.Packages.props","**/packages.lock.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: .NET restore, build and tests
+    if: hashFiles('**/*.sln') != '' || hashFiles('**/*.slnx') != '' || hashFiles('**/*.csproj') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Locate solution or project
+        id: project
+        shell: bash
+        run: |
+          target="$(find . -type f \( -name '*.sln' -o -name '*.slnx' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+      - name: Restore dependencies
+        run: dotnet restore "${{ steps.project.outputs.target }}"
+      - name: Build with warnings as errors
+        run: dotnet build "${{ steps.project.outputs.target }}" --no-restore --configuration Release -warnaserror
+      - name: Run tests when test projects exist
+        shell: bash
+        run: |
+          while IFS= read -r -d '' project; do
+            dotnet test "$project" --configuration Release --no-restore
+          done < <(find . -type f -iname '*test*.csproj' -not -path '*/obj/*' -print0)
+
+  format:
+    name: dotnet format whitespace and analyzers
+    if: hashFiles('**/*.sln') != '' || hashFiles('**/*.csproj') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Locate solution or project
+        id: project
+        shell: bash
+        run: |
+          target="$(find . -type f \( -name '*.sln' -o -name '*.csproj' \) -not -path '*/obj/*' -print -quit)"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+      - run: dotnet format "${{ steps.project.outputs.target }}" --verify-no-changes --no-restore
+
+  vulnerable-packages:
+    name: NuGet vulnerable dependency audit
+    if: hashFiles('**/*.csproj') != '' || hashFiles('**/packages.lock.json') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Audit NuGet dependencies
+        run: |
+          while IFS= read -r -d '' project; do
+            dotnet list "$project" package --vulnerable --include-transitive
+          done < <(find . -type f -name '*.csproj' -not -path '*/obj/*' -print0)
