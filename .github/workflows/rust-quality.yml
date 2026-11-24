@@ -13,14 +13,15 @@ permissions:
 jobs:
   formatting:
     name: rustfmt formatting
-    if: hashFiles('**/Cargo.toml') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup component add rustfmt
+        if: hashFiles('**/Cargo.toml') != ''
       - name: Format every Cargo workspace
+        if: hashFiles('**/Cargo.toml') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' manifest; do
@@ -29,20 +30,22 @@ jobs:
 
   lint-and-tests:
     name: Clippy and Cargo tests
-    if: hashFiles('**/Cargo.toml') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup component add clippy
+        if: hashFiles('**/Cargo.toml') != ''
       - name: Run Clippy in every Cargo project
+        if: hashFiles('**/Cargo.toml') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' manifest; do
             cargo clippy --manifest-path "$manifest" --workspace --all-targets --all-features -- -D warnings
           done < <(find . -type f -name Cargo.toml -not -path '*/target/*' -print0)
       - name: Test every Cargo project
+        if: hashFiles('**/Cargo.toml') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' manifest; do
@@ -51,15 +54,16 @@ jobs:
 
   dependency-audit:
     name: cargo-audit advisory database scan
-    if: hashFiles('**/Cargo.lock') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install cargo-audit
+        if: hashFiles('**/Cargo.lock') != ''
         run: cargo install cargo-audit --version 0.21.2 --locked
       - name: Audit each Rust lockfile
+        if: hashFiles('**/Cargo.lock') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' lockfile; do
