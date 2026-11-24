@@ -100,8 +100,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Check Markdown formatting
-        run: npx --yes prettier@3 --check README.md
+      - name: Check JSONC configuration formatting
+        run: npx --yes prettier@3 --check .markdownlint-cli2.jsonc
 
   actionlint:
     name: GitHub Actions lint
