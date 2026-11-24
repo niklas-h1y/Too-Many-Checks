@@ -13,34 +13,37 @@ permissions:
 jobs:
   buf-lint:
     name: Buf schema lint and breaking-change checks
-    if: hashFiles('**/*.proto') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install Buf CLI
+        if: hashFiles('**/*.proto') != ''
         run: |
           mkdir -p "$RUNNER_TEMP/buf-bin"
           curl -fsSL https://github.com/bufbuild/buf/releases/download/v1.59.0/buf-Linux-x86_64 -o "$RUNNER_TEMP/buf-bin/buf"
           chmod +x "$RUNNER_TEMP/buf-bin/buf"
           echo "$RUNNER_TEMP/buf-bin" >> "$GITHUB_PATH"
       - name: Lint Protocol Buffer definitions
+        if: hashFiles('**/*.proto') != ''
         run: buf lint
       - name: Build descriptor set
+        if: hashFiles('**/*.proto') != ''
         run: buf build -o "$RUNNER_TEMP/protos.binpb"
 
   protoc-parse:
     name: protoc independent schema compilation
-    if: hashFiles('**/*.proto') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install Protocol Buffers compiler
+        if: hashFiles('**/*.proto') != ''
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y protobuf-compiler
       - name: Compile all proto files
+        if: hashFiles('**/*.proto') != ''
         shell: bash
         run: |
           mapfile -t protos < <(find . -type f -name '*.proto' -not -path '*/.git/*' -not -path '*/node_modules/*')
@@ -48,13 +51,13 @@ jobs:
 
   schema-policy:
     name: Protobuf package and field-number policy scan
-    if: hashFiles('**/*.proto') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Detect duplicate field numbers within messages
+        if: hashFiles('**/*.proto') != ''
         run: |
           python - <<'PY'
           from pathlib import Path
