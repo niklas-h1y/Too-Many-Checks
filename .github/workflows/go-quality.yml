@@ -13,19 +13,20 @@ permissions:
 jobs:
   unit-and-race-tests:
     name: Go tests and race detector
-    if: hashFiles('**/go.mod') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Run unit tests in each Go module
+        if: hashFiles('**/go.mod') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' module; do
             (cd "$(dirname "$module")" && go test ./...)
           done < <(find . -type f -name go.mod -not -path '*/vendor/*' -print0)
       - name: Run race-enabled tests in each Go module
+        if: hashFiles('**/go.mod') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' module; do
@@ -34,13 +35,13 @@ jobs:
 
   compiler-vet:
     name: Go vet static analysis
-    if: hashFiles('**/go.mod') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Run go vet in every Go module
+        if: hashFiles('**/go.mod') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' module; do
@@ -49,13 +50,13 @@ jobs:
 
   vulnerability-analysis:
     name: govulncheck call-graph analysis
-    if: hashFiles('**/go.mod') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Analyze reachable Go vulnerabilities
+        if: hashFiles('**/go.mod') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' module; do
