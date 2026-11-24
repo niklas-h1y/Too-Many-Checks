@@ -13,26 +13,41 @@ permissions:
 jobs:
   formatting:
     name: rustfmt formatting
-    if: hashFiles('**/*.rs') != ''
+    if: hashFiles('**/Cargo.toml') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup component add rustfmt
-      - run: cargo fmt --all -- --check
+      - name: Format every Cargo workspace
+        shell: bash
+        run: |
+          while IFS= read -r -d '' manifest; do
+            cargo fmt --manifest-path "$manifest" --all -- --check
+          done < <(find . -type f -name Cargo.toml -not -path '*/target/*' -print0)
 
   lint-and-tests:
     name: Clippy and Cargo tests
-    if: hashFiles('**/*.rs') != ''
+    if: hashFiles('**/Cargo.toml') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup component add clippy
-      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - run: cargo test --workspace --all-features
+      - name: Run Clippy in every Cargo project
+        shell: bash
+        run: |
+          while IFS= read -r -d '' manifest; do
+            cargo clippy --manifest-path "$manifest" --workspace --all-targets --all-features -- -D warnings
+          done < <(find . -type f -name Cargo.toml -not -path '*/target/*' -print0)
+      - name: Test every Cargo project
+        shell: bash
+        run: |
+          while IFS= read -r -d '' manifest; do
+            cargo test --manifest-path "$manifest" --workspace --all-features
+          done < <(find . -type f -name Cargo.toml -not -path '*/target/*' -print0)
 
   dependency-audit:
     name: cargo-audit advisory database scan
@@ -44,4 +59,9 @@ jobs:
           persist-credentials: false
       - name: Install cargo-audit
         run: cargo install cargo-audit --version 0.21.2 --locked
-      - run: cargo audit
+      - name: Audit each Rust lockfile
+        shell: bash
+        run: |
+          while IFS= read -r -d '' lockfile; do
+            (cd "$(dirname "$lockfile")" && cargo audit)
+          done < <(find . -type f -name Cargo.lock -not -path '*/target/*' -print0)
