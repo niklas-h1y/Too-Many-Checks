@@ -15,7 +15,9 @@ jobs:
     name: APK static validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinned
+        with:
+          persist-credentials: false
       - name: Find APK artifacts
         id: find
         shell: bash
@@ -29,13 +31,13 @@ jobs:
           fi
       - name: Set up Android SDK
         if: steps.find.outputs.found == 'true'
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # pinned
       - name: Install Android build tools
         if: steps.find.outputs.found == 'true'
         run: sdkmanager "build-tools;35.0.0"
       - name: Set up Java for APK decompilation
         if: steps.find.outputs.found == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # pinned
         with:
           distribution: temurin
           java-version: "17"
@@ -106,7 +108,7 @@ jobs:
           done < apk-files.txt
       - name: Upload APK audit reports
         if: always() && steps.find.outputs.found == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pinned
         with:
           name: android-apk-audit
           path: apk-audit-reports/
