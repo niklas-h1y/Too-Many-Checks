@@ -12,8 +12,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Review dependency changes
-        uses: actions/dependency-review-action@v4
-        continue-on-error: true
-        with:
-          fail-on-severity: moderate
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # pinnedseverity: moderate
           comment-summary-in-pr: always
