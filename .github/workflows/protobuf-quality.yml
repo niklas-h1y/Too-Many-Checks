@@ -1,0 +1,77 @@
+name: Protocol Buffers validation
+
+on:
+  push:
+    paths: ["**/*.proto","**/buf.yaml","**/buf.gen.yaml"]
+  pull_request:
+    paths: ["**/*.proto","**/buf.yaml","**/buf.gen.yaml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  buf-lint:
+    name: Buf schema lint and breaking-change checks
+    if: hashFiles('**/*.proto') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Buf CLI
+        run: |
+          curl -fsSL https://github.com/bufbuild/buf/releases/download/v1.59.0/buf-Linux-x86_64 -o "$RUNNER_TEMP/buf"
+          chmod +x "$RUNNER_TEMP/buf"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          mv "$RUNNER_TEMP/buf" "$RUNNER_TEMP/buf-bin"
+          echo "$RUNNER_TEMP/buf-bin" >> "$GITHUB_PATH"
+      - name: Lint Protocol Buffer definitions
+        run: buf lint
+      - name: Build descriptor set
+        run: buf build -o "$RUNNER_TEMP/protos.binpb"
+
+  protoc-parse:
+    name: protoc independent schema compilation
+    if: hashFiles('**/*.proto') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Protocol Buffers compiler
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y protobuf-compiler
+      - name: Compile all proto files
+        shell: bash
+        run: |
+          mapfile -t protos < <(find . -type f -name '*.proto' -not -path '*/.git/*' -not -path '*/node_modules/*')
+          protoc --proto_path=. --descriptor_set_out="$RUNNER_TEMP/all-protos.pb" "${protos[@]}"
+
+  schema-policy:
+    name: Protobuf package and field-number policy scan
+    if: hashFiles('**/*.proto') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Detect duplicate field numbers within messages
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          errors = []
+          for path in Path(".").rglob("*.proto"):
+              if ".git" in path.parts or "node_modules" in path.parts:
+                  continue
+              text = re.sub(r"/\*.*?\*/|//[^\n]*", "", path.read_text(encoding="utf-8"), flags=re.S)
+              for message in re.finditer(r"\bmessage\s+\w+\s*\{([^{}]*)\}", text, re.S):
+                  numbers = re.findall(r"=\s*(\d+)\s*[;\[]", message.group(1))
+                  if len(numbers) != len(set(numbers)):
+                      errors.append(f"{path}: duplicate field number in message {message.group(0).split('{')[0].strip()}")
+          for error in errors:
+              print(f"::error::{error}")
+          if errors:
+              raise SystemExit(1)
+          print("No duplicate field numbers found by the lightweight policy scan.")
+          PY
