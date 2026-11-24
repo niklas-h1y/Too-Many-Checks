@@ -1,6 +1,6 @@
 # Too Many Checks
 
-A deliberately over-instrumented GitHub repository: a playground for seeing how many useful, distinct checks GitHub can run on every change.
+A deliberately over-instrumented GitHub repository: a playground for seeing how many useful, distinct checks GitHub can run on every change. Source: [Too Many Checks](https://github.com/niklas-h1y/Too-Many-Checks).
 
 The repository is language-neutral by default. Checks that need a particular artifact (Android APKs, Android App Bundles, shell scripts, Dockerfiles, Gradle projects) activate only when that input exists.
 
