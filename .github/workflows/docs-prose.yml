@@ -13,42 +13,45 @@ permissions:
 jobs:
   alex-inclusive-language:
     name: Alex inclusive-language lint
-    if: hashFiles('**/*.md') != '' || hashFiles('**/*.rst') != '' || hashFiles('**/*.txt') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('**/*.md') != '' || hashFiles('**/*.rst') != '' || hashFiles('**/*.txt') != ''
         with:
           node-version: "22"
       - name: Check insensitive and potentially exclusionary language
+        if: hashFiles('**/*.md') != '' || hashFiles('**/*.rst') != '' || hashFiles('**/*.txt') != ''
         run: npx --yes alex@11.0.1 .
 
   write-good:
     name: Write-good prose style analysis
-    if: hashFiles('**/*.md') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('**/*.md') != ''
         with:
           node-version: "22"
       - name: Analyze Markdown prose
+        if: hashFiles('**/*.md') != ''
         run: npx --yes write-good@1.10.0 README.md
 
   textlint:
     name: Textlint spelling and style rules
-    if: hashFiles('**/*.md') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('**/*.md') != ''
         with:
           node-version: "22"
       - name: Run common misspelling terminology rules
+        if: hashFiles('**/*.md') != ''
         run: npx --yes textlint@14.8.3 --rule textlint-rule-common-misspellings README.md
