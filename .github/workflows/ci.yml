@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-integrity:
+    name: Repository integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for whitespace errors
+        run: git diff --check
+      - name: Check required repository files
+        shell: bash
+        run: |
+          test -s README.md
+          test -d .github/workflows
+          find .github/workflows -maxdepth 1 -type f -name '*.yml' -o -name '*.yaml' | grep -q .
+
+  platform-matrix:
+    name: Platform / Python ${{ matrix.python }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+        node: ["20", "22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Runtime smoke test
+        run: |
+          python --version
+          python -c "import json, pathlib, sys; print(json.dumps({'python': sys.version, 'files': len(list(pathlib.Path('.').rglob('*')))}))"
+          node --version
+          node -e "console.log(JSON.stringify({node: process.version, platform: process.platform}))"
+
+  yaml:
+    name: YAML validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .
+          config_data: |
+            extends: relaxed
+            rules:
+              line-length: disable
+              truthy:
+                allowed-values: ['true', 'false', 'on', 'off']
+              document-start: disable
+
+  markdown:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: '**/*.md'
+      - name: Spell check
+        uses: codespell-project/actions-codespell@v2
+        with:
+          check_filenames: true
+
+  prettier:
+    name: Prettier format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actionsx/prettier@v3
+        with:
+          args: --check .
+
+  actionlint:
+    name: GitHub Actions lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rhysd/actionlint@v1
+
+  pre-commit:
+    name: Pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
