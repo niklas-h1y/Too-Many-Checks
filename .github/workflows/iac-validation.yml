@@ -1,0 +1,79 @@
+name: Infrastructure-as-code validation
+
+on:
+  push:
+    paths: ["**/*.tf", "**/*.tfvars", "**/*.hcl", "**/kustomization.yaml", "**/Chart.yaml", "**/values.yaml"]
+  pull_request:
+    paths: ["**/*.tf", "**/*.tfvars", "**/*.hcl", "**/kustomization.yaml", "**/Chart.yaml", "**/values.yaml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detect infrastructure files
+    runs-on: ubuntu-latest
+    outputs:
+      terraform: ${{ steps.probe.outputs.terraform }}
+      iac: ${{ steps.probe.outputs.iac }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: probe
+        shell: bash
+        run: |
+          if find . -type f -name '*.tf' -not -path './.git/*' -print -quit | grep -q .; then
+            echo "terraform=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "terraform=false" >> "$GITHUB_OUTPUT"
+          fi
+          if find . -type f \( -name '*.tf' -o -name '*.tfvars' -o -name '*.hcl' -o -name 'Chart.yaml' -o -name 'kustomization.yaml' \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo "iac=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "iac=false" >> "$GITHUB_OUTPUT"
+            echo "No supported IaC files found."
+          fi
+
+  terraform:
+    name: Terraform formatting and validation
+    needs: detect
+    if: needs.detect.outputs.terraform == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Terraform
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/terraform.zip" https://releases.hashicorp.com/terraform/1.14.0/terraform_1.14.0_linux_amd64.zip
+          unzip -q "$RUNNER_TEMP/terraform.zip" -d "$RUNNER_TEMP/terraform"
+          echo "$RUNNER_TEMP/terraform" >> "$GITHUB_PATH"
+      - name: Check canonical formatting
+        run: terraform fmt -check -recursive
+      - name: Validate every initialized root module
+        shell: bash
+        run: |
+          while IFS= read -r -d '' dir; do
+            if compgen -G "$dir/*.tf" > /dev/null; then
+              terraform -chdir="$dir" init -backend=false -input=false
+              terraform -chdir="$dir" validate
+            fi
+          done < <(find . -type d -not -path './.git*' -not -path '*/.terraform*' -print0)
+
+  checkov:
+    name: Checkov policy evaluation
+    needs: detect
+    if: needs.detect.outputs.iac == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --disable-pip-version-check checkov==3.2.495
+      - name: Evaluate infrastructure security policies
+        run: checkov --directory . --quiet --compact
