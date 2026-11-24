@@ -13,45 +13,48 @@ permissions:
 jobs:
   html-validate:
     name: HTML conformance validation
-    if: hashFiles('**/*.html') != '' || hashFiles('**/*.htm') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('**/*.html') != '' || hashFiles('**/*.htm') != ''
         with:
           node-version: "22"
       - name: Validate HTML documents
+        if: hashFiles('**/*.html') != '' || hashFiles('**/*.htm') != ''
         run: |
           mapfile -t pages < <(find . -type f \( -iname '*.html' -o -iname '*.htm' \) -not -path '*/node_modules/*' -not -path './.git/*')
           npx --yes html-validate@10.5.0 "${pages[@]}"
 
   markuplint:
     name: Markuplint accessibility and markup rules
-    if: hashFiles('**/*.html') != '' || hashFiles('**/*.htm') != '' || hashFiles('**/*.vue') != '' || hashFiles('**/*.svelte') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('**/*.html') != '' || hashFiles('**/*.htm') != '' || hashFiles('**/*.vue') != '' || hashFiles('**/*.svelte') != ''
         with:
           node-version: "22"
       - name: Run Markuplint
+        if: hashFiles('**/*.html') != '' || hashFiles('**/*.htm') != '' || hashFiles('**/*.vue') != '' || hashFiles('**/*.svelte') != ''
         run: npx --yes markuplint@4.13.1 "**/*.{html,htm,vue,svelte}"
 
   jsx-accessibility:
     name: ESLint jsx-a11y component accessibility rules
-    if: hashFiles('**/*.jsx') != '' || hashFiles('**/*.tsx') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: hashFiles('**/*.jsx') != '' || hashFiles('**/*.tsx') != ''
         with:
           node-version: "22"
       - name: Run jsx-a11y rules
+        if: hashFiles('**/*.jsx') != '' || hashFiles('**/*.tsx') != ''
         run: |
           npx --yes --package eslint@9.39.1 --package eslint-plugin-jsx-a11y@6.10.2 eslint "**/*.{jsx,tsx}" --no-config-lookup --plugin jsx-a11y --rule 'jsx-a11y/alt-text:error' --rule 'jsx-a11y/anchor-has-content:error' --rule 'jsx-a11y/aria-props: error' --rule 'jsx-a11y/aria-proptypes:error' --rule 'jsx-a11y/role-has-required-aria-props:error'
