@@ -88,7 +88,21 @@ jobs:
             echo "=== APKID PACKER / COMPILER SCAN ===" | tee -a "$report"
             apkid "$apk" 2>&1 | tee -a "$report"
             echo "=== APKLEAKS HARDCODED-SECRET SCAN ===" | tee -a "$report"
-            apkleaks -f "$apk" 2>&1 | tee -a "$report"
+            apkleaks -f "$apk" --json -o "apk-audit-reports/$name-apkleaks.json" 2>&1 | tee -a "$report"
+            python - "apk-audit-reports/$name-apkleaks.json" "$apk" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as report_file:
+              report_data = json.load(report_file)
+          findings = report_data.get("results", [])
+          if findings:
+              print(f"::error file={sys.argv[2]}::APKLeaks found {len(findings)} potential hard-coded secret pattern(s)")
+              for finding in findings:
+                  print(finding.get("name", "Unspecified secret pattern"))
+              raise SystemExit(1)
+          print("APKLeaks found no hard-coded secret patterns.")
+          PY
           done < apk-files.txt
       - name: Upload APK audit reports
         if: always() && steps.find.outputs.found == 'true'
