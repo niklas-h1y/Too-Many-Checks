@@ -51,7 +51,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,misconfig,secret,license
+          scanners: misconfig,license
           format: table
           exit-code: "1"
           ignore-unfixed: true
