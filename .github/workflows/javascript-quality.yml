@@ -22,7 +22,7 @@ jobs:
         id: detect
         shell: bash
         run: |
-          if find . -name package.json -not -path '*/node_modules/*' -not -path './.git/*' -print -quit | grep -q .; then
+          if [[ -f package.json ]]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
@@ -32,7 +32,6 @@ jobs:
         if: steps.detect.outputs.present == 'true'
         with:
           node-version: "22"
-          cache: npm
       - name: Install dependencies
         if: steps.detect.outputs.present == 'true'
         shell: bash
