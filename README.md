@@ -11,18 +11,18 @@ The repository is language-neutral by default. Checks that need a particular art
 | Workflow security | CodeQL for Actions, zizmor, actionlint, SECURITY.md disclosure policy |
 | Supply chain | OpenSSF Scorecard, OSV-Scanner, Dependabot, GitHub dependency review |
 | Repository security | Gitleaks, Trivy filesystem / IaC / license scan |
-| Android APKs | ZIP integrity, manifest metadata, signing certificates, zip alignment, debug / cleartext flags, APKID packer detection, APKLeaks embedded-secret scan |
+| Android APKs | ZIP integrity, manifest/component exposure review, DEX inventory, signing schemes and certificates, zip alignment, APKID packer detection, APKLeaks secret scan, JADX decompilation and risky-API heuristics |
 | Android App Bundles | Bundletool structural validation, module manifest inspection, JAR signature verification |
 | Documentation | markdownlint-cli2, codespell, Lychee external-link validation |
-| General configuration | yamllint, JSON/TOML validation, Prettier JSONC formatting, pre-commit hygiene |
-| Shell | ShellCheck and shfmt (only when shell scripts exist) |
+| General configuration | yamllint, JSON/TOML validation, Prettier JSONC formatting, pre-commit hygiene, HTML5/XML/SVG parser validation |
+| Python | Ruff lint/format, Bandit security rules, mypy typing, pip-audit dependency review (only when Python sources exist) |\n| JavaScript / TypeScript | npm audit, declared lint/test scripts, TypeScript compiler validation (only with a root package manifest) |\n| Infrastructure as code | Terraform fmt/validate and Checkov policy checks (only when IaC files exist) |\n| Archives and binaries | ZIP/JAR/WAR/EAR/AAR/TAR/GZIP integrity, path traversal, duplicate-entry and decompression-bomb checks |\n| Shell | ShellCheck and shfmt (only when shell scripts exist) |
 | Containers | Hadolint (only when Dockerfiles exist) |
 | CI compatibility | 24-way OS / Python / Node runtime smoke-test matrix |
 | Pull requests | Semantic PR-title validation, dependency review, automatic labels |
 | Project hygiene | License inventory, SPDX SBOM, stale issue/PR management |
 | Releases | Source archive, SHA-256 checksums, build-provenance attestation |
 
-The workflows intentionally avoid running two tools for the same job. Some security tools have overlapping coverage by nature, but their distinct engines and data sources are documented in their job names.
+The suite permits substantial overlap: two checks may inspect the same artifact or risk category and still count separately when they use different engines, rulesets, heuristics, validation stages, or data sources. The goal is distinct signal rather than artificially minimizing repeated coverage.
 
 ## Android artifact checks
 
@@ -36,7 +36,7 @@ APK validation checks:
 - 4-byte ZIP alignment.
 - Debuggable and cleartext-traffic manifest flags.
 - APKID packer/compiler indicators.
-- APKLeaks for embedded API keys and other hard-coded secrets.
+- APKLeaks for embedded API keys and other hard-coded secrets.\n- JADX decompilation with heuristic flags for risky WebView, TLS, cipher, file-mode, and plain-HTTP API patterns.\n- Manifest review for exported components without component-level permissions, backup-enabled apps, and test-only builds.
 
 AAB validation checks:
 
