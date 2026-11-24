@@ -14,7 +14,7 @@ jobs:
     name: Package source and attest artifacts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinned
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -26,14 +26,16 @@ jobs:
           cd dist
           sha256sum source.tar.gz source.zip > SHA256SUMS
       - name: Attest release artifacts
-        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # pinned
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
         with:
           subject-path: "dist/*"
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # pinned
-        with:
-          files: |
-            dist/source.tar.gz
-            dist/source.zip
-            dist/SHA256SUMS
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/source.tar.gz \
+            dist/source.zip \
+            dist/SHA256SUMS \
+            --generate-notes \
+            --verify-tag
