@@ -87,10 +87,11 @@ jobs:
       - name: Audit requirements files
         shell: bash
         run: |
-          mapfile -t manifests < <(find . -type f \( -name 'requirements.txt' -o -name 'requirements-dev.txt' -o -name 'requirements-prod.txt' \) -not -path './.git/*')
+          mapfile -t manifests < <(find . -type f \( -name 'requirements*.txt' \) -not -path './.git/*')
           if (("${#manifests[@]}" > 0)); then
             for manifest in "${manifests[@]}"; do pip-audit -r "$manifest"; done
           elif [[ -f pyproject.toml ]]; then
+            python -m pip install .
             pip-audit
           else
             echo "No pip requirements manifest found; package vulnerability audit is skipped."
