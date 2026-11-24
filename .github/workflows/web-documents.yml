@@ -1,0 +1,43 @@
+name: Web document validation
+
+on:
+  push:
+    paths: ["**/*.html", "**/*.htm", "**/*.xml", "**/*.svg"]
+  pull_request:
+    paths: ["**/*.html", "**/*.htm", "**/*.xml", "**/*.svg"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-documents:
+    name: HTML and XML parser validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install validators
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libxml2-utils
+      - name: Validate XML and SVG documents
+        shell: bash
+        run: |
+          mapfile -t files < <(find . -type f \( -iname '*.xml' -o -iname '*.svg' \) -not -path './.git/*')
+          for file in "${files[@]}"; do
+            echo "Validating $file"
+            xmllint --noout --nonet "$file"
+          done
+          if (("${#files[@]}" == 0)); then echo "No XML/SVG files found."; fi
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Validate HTML5 documents
+        run: |
+          python -m pip install --disable-pip-version-check html5validator==0.4.2
+          mapfile -t files < <(find . -type f \( -iname '*.html' -o -iname '*.htm' \) -not -path './.git/*')
+          if (("${#files[@]}" > 0)); then
+            html5validator --root . --also-check-css --log INFO
+          else
+            echo "No HTML files found."
+          fi
