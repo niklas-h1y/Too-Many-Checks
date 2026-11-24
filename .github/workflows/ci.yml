@@ -110,7 +110,7 @@ jobs:
         with:
           node-version: "22"
       - name: Check JSONC configuration formatting
-        run: npx --yes prettier@3 --check .markdownlint-cli2.jsonc
+        run: npx --yes prettier@3 --trailing-comma none --check .markdownlint-cli2.jsonc
 
   actionlint:
     name: GitHub Actions lint
