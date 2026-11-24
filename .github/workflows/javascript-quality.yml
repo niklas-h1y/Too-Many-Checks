@@ -1,0 +1,55 @@
+name: JavaScript and TypeScript checks
+
+on:
+  push:
+    paths: ["**/package.json", "**/package-lock.json", "**/npm-shrinkwrap.json", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.tsx"]
+  pull_request:
+    paths: ["**/package.json", "**/package-lock.json", "**/npm-shrinkwrap.json", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.tsx"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-project:
+    name: npm audit, scripts and TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Detect package manifest
+        id: detect
+        shell: bash
+        run: |
+          if find . -name package.json -not -path '*/node_modules/*' -not -path './.git/*' -print -quit | grep -q .; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No package.json found; Node-specific checks are skipped."
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.detect.outputs.present == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        if: steps.detect.outputs.present == 'true'
+        shell: bash
+        run: |
+          if [[ -f package-lock.json || -f npm-shrinkwrap.json ]]; then
+            npm ci
+          else
+            npm install --package-lock=false
+          fi
+      - name: Audit npm dependencies
+        if: steps.detect.outputs.present == 'true'
+        run: npm audit --audit-level=high
+      - name: Run declared lint and test scripts
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          npm run lint --if-present
+          npm test --if-present
+      - name: TypeScript compiler check
+        if: steps.detect.outputs.present == 'true' && hashFiles('tsconfig.json') != ''
+        run: npx --no-install tsc --noEmit
