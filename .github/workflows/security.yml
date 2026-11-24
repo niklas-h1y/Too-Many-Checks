@@ -10,8 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
@@ -21,9 +19,12 @@ jobs:
   codeql:
     name: CodeQL / Actions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: github/codeql-action/init@v3
         with:
           languages: actions
           build-mode: none
@@ -34,20 +35,20 @@ jobs:
   gitleaks:
     name: Secret scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   trivy:
     name: Trivy filesystem and misconfiguration scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: aquasecurity/trivy-action@v0.36.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -63,17 +64,17 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: zizmorcore/zizmor-action@v0.2.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedses: zizmorcore/zizmor-action@v0.2.0
         with:
           advanced-security: false
 
   osv:
     name: OSV dependency vulnerability scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - name: Scan dependency manifests and lockfiles
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedsts and lockfiles
         uses: google/osv-scanner-action/osv-scanner-action@v2.7.1
         with:
           scan-args: |-
