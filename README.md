@@ -15,7 +15,11 @@ The repository is language-neutral by default. Checks that need a particular art
 | Android App Bundles | Bundletool structural validation, module manifest inspection, JAR signature verification |
 | Documentation | markdownlint-cli2, codespell, Lychee external-link validation |
 | General configuration | yamllint, JSON/TOML validation, Prettier JSONC formatting, pre-commit hygiene, HTML5/XML/SVG parser validation |
-| Python | Ruff lint/format, Bandit security rules, mypy typing, pip-audit dependency review (only when Python sources exist) |\n| JavaScript / TypeScript | npm audit, declared lint/test scripts, TypeScript compiler validation (only with a root package manifest) |\n| Infrastructure as code | Terraform fmt/validate and Checkov policy checks (only when IaC files exist) |\n| Archives and binaries | ZIP/JAR/WAR/EAR/AAR/TAR/GZIP integrity, path traversal, duplicate-entry and decompression-bomb checks |\n| Shell | ShellCheck and shfmt (only when shell scripts exist) |
+| Python | Ruff lint/format, Bandit security rules, mypy typing, pip-audit dependency review (only when Python sources exist) |
+| JavaScript / TypeScript | npm audit, declared lint/test scripts, TypeScript compiler validation (only with a root package manifest) |
+| Infrastructure as code | Terraform fmt/validate and Checkov policy checks (only when IaC files exist) |
+| Archives and binaries | ZIP/JAR/WAR/EAR/AAR/TAR/GZIP integrity, path traversal, duplicate-entry and decompression-bomb checks |
+| Shell | ShellCheck and shfmt (only when shell scripts exist) |
 | Containers | Hadolint (only when Dockerfiles exist) |
 | CI compatibility | 24-way OS / Python / Node runtime smoke-test matrix |
 | Pull requests | Semantic PR-title validation, dependency review, automatic labels |
@@ -36,7 +40,9 @@ APK validation checks:
 - 4-byte ZIP alignment.
 - Debuggable and cleartext-traffic manifest flags.
 - APKID packer/compiler indicators.
-- APKLeaks for embedded API keys and other hard-coded secrets.\n- JADX decompilation with heuristic flags for risky WebView, TLS, cipher, file-mode, and plain-HTTP API patterns.\n- Manifest review for exported components without component-level permissions, backup-enabled apps, and test-only builds.
+- APKLeaks for embedded API keys and other hard-coded secrets.
+- JADX decompilation with heuristic flags for risky WebView, TLS, cipher, file-mode, and plain-HTTP API patterns.
+- Manifest review for exported components without component-level permissions, backup-enabled apps, and test-only builds.
 
 AAB validation checks:
 
