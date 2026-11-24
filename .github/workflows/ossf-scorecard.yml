@@ -20,9 +20,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedsist-credentials: false
       - name: Install Scorecard CLI
         run: |
           go install github.com/ossf/scorecard/v5@v5.7.0
