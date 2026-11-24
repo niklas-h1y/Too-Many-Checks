@@ -1,0 +1,43 @@
+name: Containerfile lint
+
+on:
+  push:
+    branches: [main]
+    paths: ["Dockerfile", "**/Dockerfile", "**/*.Dockerfile"]
+  pull_request:
+    paths: ["Dockerfile", "**/Dockerfile", "**/*.Dockerfile"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    name: Hadolint Dockerfile analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find Dockerfiles
+        id: files
+        shell: bash
+        run: |
+          find . -type f \( -name 'Dockerfile' -o -name '*.Dockerfile' \) -not -path './.git/*' -print > dockerfiles.txt
+          if [ -s dockerfiles.txt ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Hadolint
+        if: steps.files.outputs.found == 'true'
+        run: |
+          curl -fsSL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o /tmp/hadolint
+          chmod +x /tmp/hadolint
+          sudo install /tmp/hadolint /usr/local/bin/hadolint
+      - name: Lint each Dockerfile
+        if: steps.files.outputs.found == 'true'
+        shell: bash
+        run: |
+          while IFS= read -r file; do
+            echo "Checking $file"
+            hadolint "$file"
+          done < dockerfiles.txt
