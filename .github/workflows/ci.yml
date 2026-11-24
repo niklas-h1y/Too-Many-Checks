@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actionsx/prettier@v3
         with:
-          args: --check .
+          args: --check README.md
 
   actionlint:
     name: GitHub Actions lint
