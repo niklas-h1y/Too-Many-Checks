@@ -13,13 +13,13 @@ permissions:
 jobs:
   maven-validation:
     name: Maven validate, test and package
-    if: hashFiles('**/pom.xml') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Validate and test Maven projects
+        if: hashFiles('**/pom.xml') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' pom; do
@@ -28,13 +28,13 @@ jobs:
 
   gradle-validation:
     name: Gradle check and build
-    if: hashFiles('**/gradlew') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Run Gradle checks
+        if: hashFiles('**/gradlew') != ''
         shell: bash
         run: |
           while IFS= read -r -d '' wrapper; do
@@ -45,13 +45,13 @@ jobs:
 
   java-source-analysis:
     name: Java compiler lint and SpotBugs
-    if: hashFiles('**/*.java') != '' && hashFiles('**/pom.xml') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Run Maven compiler lint
+        if: hashFiles('**/*.java') != '' && hashFiles('**/pom.xml') != ''
         run: |
           while IFS= read -r -d '' pom; do
             mvn -B -f "$pom" -DskipTests -Dmaven.compiler.showWarnings=true -Dmaven.compiler.compilerArgs=-Xlint:all compile
