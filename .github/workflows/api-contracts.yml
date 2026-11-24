@@ -1,0 +1,81 @@
+name: API contract lint and validation
+
+on:
+  push:
+    paths: ["**/*openapi*.yaml","**/*openapi*.yml","**/*openapi*.json","**/*swagger*.yaml","**/*swagger*.yml","**/*swagger*.json"]
+  pull_request:
+    paths: ["**/*openapi*.yaml","**/*openapi*.yml","**/*openapi*.json","**/*swagger*.yaml","**/*swagger*.yml","**/*swagger*.json"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect-contracts:
+    name: Detect API specifications
+    runs-on: ubuntu-latest
+    outputs:
+      found: ${{ steps.scan.outputs.found }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: scan
+        shell: bash
+        run: |
+          if find . -type f \( -iname '*openapi*.yaml' -o -iname '*openapi*.yml' -o -iname '*openapi*.json' -o -iname '*swagger*.yaml' -o -iname '*swagger*.yml' -o -iname '*swagger*.json' \) -not -path '*/node_modules/*' -not -path './.git/*' -print -quit | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  spectral-rules:
+    name: Stoplight Spectral API lint
+    needs: detect-contracts
+    if: needs.detect-contracts.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Lint OpenAPI contracts
+        run: |
+          mapfile -t specs < <(find . -type f \( -iname '*openapi*.yaml' -o -iname '*openapi*.yml' -o -iname '*openapi*.json' -o -iname '*swagger*.yaml' -o -iname '*swagger*.yml' -o -iname '*swagger*.json' \) -not -path '*/node_modules/*' -not -path './.git/*')
+          npx --yes @stoplight/spectral-cli@6.15.0 lint "${specs[@]}"
+
+  redocly-validation:
+    name: Redocly OpenAPI semantic validation
+    needs: detect-contracts
+    if: needs.detect-contracts.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Validate OpenAPI documents
+        run: |
+          mapfile -t specs < <(find . -type f \( -iname '*openapi*.yaml' -o -iname '*openapi*.yml' -o -iname '*openapi*.json' -o -iname '*swagger*.yaml' -o -iname '*swagger*.yml' -o -iname '*swagger*.json' \) -not -path '*/node_modules/*' -not -path './.git/*')
+          for spec in "${specs[@]}"; do npx --yes @redocly/cli@2.11.1 lint "$spec"; done
+
+  swagger-parser:
+    name: Swagger parser validation
+    needs: detect-contracts
+    if: needs.detect-contracts.outputs.found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Parse OpenAPI and Swagger files
+        run: |
+          mapfile -t specs < <(find . -type f \( -iname '*openapi*.yaml' -o -iname '*openapi*.yml' -o -iname '*openapi*.json' -o -iname '*swagger*.yaml' -o -iname '*swagger*.yml' -o -iname '*swagger*.json' \) -not -path '*/node_modules/*' -not -path './.git/*')
+          for spec in "${specs[@]}"; do npx --yes swagger-cli@4.0.4 validate "$spec"; done
