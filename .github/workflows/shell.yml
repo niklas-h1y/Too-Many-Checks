@@ -17,17 +17,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Find shell scripts
+        id: scripts
+        shell: bash
+        run: |
+          find . -type f \( -name '*.sh' -o -name '*.bash' \) -not -path './.git/*' -print > shell-files.txt
+          if [ -s shell-files.txt ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No shell scripts found; shell-specific checks are skipped."
+          fi
       - name: Install shell analyzers
+        if: steps.scripts.outputs.found == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install --yes shellcheck shfmt
-      - name: Lint shell scripts when present
+      - name: Run ShellCheck and shfmt
+        if: steps.scripts.outputs.found == 'true'
         shell: bash
         run: |
-          mapfile -d '' scripts < <(find . -type f \( -name '*.sh' -o -name '*.bash' \) -not -path './.git/*' -print0)
-          if [ "${#scripts[@]}" -eq 0 ]; then
-            echo "No shell scripts found; nothing to lint."
-            exit 0
-          fi
+          mapfile -t scripts < shell-files.txt
           shellcheck --severity=style "${scripts[@]}"
-          shfmt -d "${scripts[@]}"
+          shfmt -d -i 2 "${scripts[@]}"
