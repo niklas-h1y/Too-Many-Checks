@@ -22,7 +22,7 @@ jobs:
         if: hashFiles('**/*.rb') != ''
         with:
           ruby-version: "3.3"
-      - run: gem install rubocop --no-document --version 1.81.1
+      - run: gem install rubocop --no-document --version 1.81.1 # zizmor: ignore[adhoc-packages] exact-version CI linter, not project dependency
         if: hashFiles('**/*.rb') != ''
       - run: rubocop --format progress
         if: hashFiles('**/*.rb') != ''
@@ -38,7 +38,7 @@ jobs:
         if: hashFiles('**/Gemfile') != ''
         with:
           ruby-version: "3.3"
-      - run: gem install bundler-audit --no-document --version 0.9.2
+      - run: gem install bundler-audit --no-document --version 0.9.2 # zizmor: ignore[adhoc-packages] exact-version CI audit tool, not project dependency
         if: hashFiles('**/Gemfile') != ''
       - run: bundle-audit check --update
         if: hashFiles('**/Gemfile') != ''
