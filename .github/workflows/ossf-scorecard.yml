@@ -20,7 +20,7 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Install Scorecard CLI
@@ -32,6 +32,6 @@ jobs:
           GITHUB_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: scorecard --repo=github.com/${{ github.repository }} --format=sarif --output=scorecard.sarif
       - name: Upload Scorecard results
-        uses: github/codeql-action/upload-sarif@d2aacf54c2fbc910db8d7ec338fdb54ea48c692d # v3
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: scorecard.sarif

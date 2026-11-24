@@ -15,7 +15,7 @@ jobs:
     name: AAB structure, manifest and signing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinned
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pinned
         with:
           persist-credentials: false
       - name: Find Android App Bundles
@@ -31,7 +31,7 @@ jobs:
           fi
       - name: Set up Java
         if: steps.find.outputs.found == 'true'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # pinned
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # pinned
         with:
           distribution: temurin
           java-version: "17"
@@ -65,7 +65,7 @@ jobs:
           done < aab-files.txt
       - name: Upload AAB audit reports
         if: always() && steps.find.outputs.found == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pinned
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # pinned
         with:
           name: android-app-bundle-audit
           path: aab-audit-reports/

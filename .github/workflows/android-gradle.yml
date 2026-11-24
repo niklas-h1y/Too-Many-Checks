@@ -16,7 +16,7 @@ jobs:
     name: Android Gradle lint and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinned
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pinned
         with:
           persist-credentials: false
       - name: Detect Android Gradle project
@@ -33,7 +33,7 @@ jobs:
           fi
       - name: Set up Java
         if: steps.gradle.outputs.found == 'true'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # pinned
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # pinned
         with:
           distribution: temurin
           java-version: "17"
