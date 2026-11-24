@@ -3,7 +3,6 @@ name: Release artifacts and provenance
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch:
 
 permissions:
   contents: write
