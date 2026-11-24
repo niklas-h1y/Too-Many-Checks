@@ -17,16 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Locate Gradle wrapper
+      - name: Detect Android Gradle project
         id: gradle
         shell: bash
         run: |
           find . -type f -name gradlew -not -path './.git/*' -print > gradle-wrappers.txt
-          if [ -s gradle-wrappers.txt ]; then
+          grep -RIlE 'com\.android\.(application|library)' --include='*.gradle' --include='*.gradle.kts' . > android-gradle-files.txt || true
+          if [ -s gradle-wrappers.txt ] && [ -s android-gradle-files.txt ]; then
             echo "found=true" >> "$GITHUB_OUTPUT"
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No Gradle wrapper found; Android build checks are skipped."
+            echo "No Android Gradle project found; Android build checks are skipped."
           fi
       - name: Set up Java
         if: steps.gradle.outputs.found == 'true'
