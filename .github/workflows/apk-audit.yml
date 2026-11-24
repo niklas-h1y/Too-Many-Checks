@@ -33,11 +33,23 @@ jobs:
       - name: Install Android build tools
         if: steps.find.outputs.found == 'true'
         run: sdkmanager "build-tools;35.0.0"
-      - name: Install APK static-analysis tools
+      - name: Set up Java for APK decompilation
+        if: steps.find.outputs.found == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install JADX decompiler
         if: steps.find.outputs.found == 'true'
         run: |
-          python -m pip install --disable-pip-version-check apkid apkleaks
+          curl -fsSL https://github.com/skylot/jadx/releases/download/v1.5.5/jadx-1.5.5.zip -o /tmp/jadx.zip
+          sudo mkdir -p /opt/jadx
+          sudo unzip -q /tmp/jadx.zip -d /opt/jadx
+          echo "/opt/jadx/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
+      - name: Install APK static-analysis tools
+        if: steps.find.outputs.found == 'true'
+        run: python -m pip install --disable-pip-version-check apkid apkleaks
       - name: Inspect APK structure, manifest, signing and alignment
         if: steps.find.outputs.found == 'true'
         shell: bash
