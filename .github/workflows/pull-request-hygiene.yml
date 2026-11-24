@@ -10,6 +10,7 @@ permissions:
 jobs:
   semantic-title:
     name: Conventional PR title
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Validate pull request title
