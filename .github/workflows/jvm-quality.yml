@@ -1,0 +1,58 @@
+name: JVM build and dependency checks
+
+on:
+  push:
+    paths: ["**/*.java","**/pom.xml","**/mvnw","**/build.gradle","**/build.gradle.kts","**/gradlew"]
+  pull_request:
+    paths: ["**/*.java","**/pom.xml","**/mvnw","**/build.gradle","**/build.gradle.kts","**/gradlew"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  maven-validation:
+    name: Maven validate, test and package
+    if: hashFiles('**/pom.xml') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate and test Maven projects
+        shell: bash
+        run: |
+          while IFS= read -r -d '' pom; do
+            mvn -B -f "$pom" verify
+          done < <(find . -type f -name pom.xml -not -path '*/target/*' -print0)
+
+  gradle-validation:
+    name: Gradle check and build
+    if: hashFiles('**/gradlew') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run Gradle checks
+        shell: bash
+        run: |
+          while IFS= read -r -d '' wrapper; do
+            chmod +x "$wrapper"
+            dir="$(dirname "$wrapper")"
+            "$wrapper" -p "$dir" --no-daemon check build
+          done < <(find . -type f -name gradlew -not -path '*/.gradle/*' -print0)
+
+  java-source-analysis:
+    name: Java compiler lint and SpotBugs
+    if: hashFiles('**/*.java') != '' && hashFiles('**/pom.xml') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run Maven compiler lint
+        run: |
+          while IFS= read -r -d '' pom; do
+            mvn -B -f "$pom" -DskipTests -Dmaven.compiler.showWarnings=true -Dmaven.compiler.compilerArgs=-Xlint:all compile
+          done < <(find . -type f -name pom.xml -not -path '*/target/*' -print0)
