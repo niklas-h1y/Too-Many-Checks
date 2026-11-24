@@ -14,15 +14,23 @@ jobs:
     name: License inventory
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # pinnedsitory license file
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Check repository license file
         run: |
           if [ ! -f LICENSE ] && [ ! -f LICENSE.md ] && [ ! -f LICENSE.txt ]; then
             echo "::warning::No LICENSE file found. Add one to make reuse terms clear."
           fi
       - name: Generate source inventory
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # pinnedspdx-json
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: .
+          format: spdx-json
           output-file: sbom.spdx.json
       - name: Upload SBOM
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pinnedsource-sbom
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-sbom
           path: sbom.spdx.json
           retention-days: 30
