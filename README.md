@@ -8,7 +8,7 @@ The repository is language-neutral by default. Checks that need a particular art
 
 | Area | Distinct checks |
 |---|---|
-| Workflow security | CodeQL for Actions, zizmor, actionlint |
+| Workflow security | CodeQL for Actions, zizmor, actionlint, SECURITY.md disclosure policy |
 | Supply chain | OpenSSF Scorecard, OSV-Scanner, Dependabot, GitHub dependency review |
 | Repository security | Gitleaks, Trivy filesystem / IaC / license scan |
 | Android APKs | ZIP integrity, manifest metadata, signing certificates, zip alignment, debug / cleartext flags, APKID packer detection, APKLeaks embedded-secret scan |
